@@ -1,0 +1,6 @@
+{
+  "name": "Brightloop – Subscription Management System",
+  "description": "Backend REST API service, database architecture, and authentication system for Brightloop Subscription Management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,345 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "System user account with authentication profile and system role",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Unique identifier matching Firebase Auth UID" },
+        "email": { "type": "string", "format": "email", "description": "User email address" },
+        "role": { "type": "string", "enum": ["admin", "staff", "customer"], "description": "Role-based access level" },
+        "displayName": { "type": "string", "maxLength": 100, "description": "User full name" },
+        "phoneNumber": { "type": "string", "maxLength": 20, "description": "Optional phone number" },
+        "status": { "type": "string", "enum": ["active", "suspended"], "description": "Account status" },
+        "createdAt": { "type": "string", "description": "ISO timestamp of account creation" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of last update" }
+      },
+      "required": ["uid", "email", "role", "displayName", "status", "createdAt", "updatedAt"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Customer business or individual profile linked to a user account",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique customer ID" },
+        "userId": { "type": "string", "description": "Linked User UID" },
+        "companyName": { "type": "string", "maxLength": 150, "description": "Company name or personal name" },
+        "billingAddress": { "type": "string", "maxLength": 300, "description": "Full billing address" },
+        "shippingAddress": { "type": "string", "maxLength": 300, "description": "Full shipping address" },
+        "taxId": { "type": "string", "maxLength": 50, "description": "VAT or Tax registration ID" },
+        "paymentTerms": { "type": "string", "enum": ["immediate", "net15", "net30", "net60"], "description": "Agreed default payment terms" },
+        "status": { "type": "string", "enum": ["active", "inactive"], "description": "Customer status" },
+        "createdAt": { "type": "string", "description": "ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp" }
+      },
+      "required": ["id", "userId", "companyName", "billingAddress", "paymentTerms", "status", "createdAt", "updatedAt"]
+    },
+    "Staff": {
+      "title": "Staff",
+      "description": "Staff member profile created exclusively by Administrators",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique staff ID" },
+        "userId": { "type": "string", "description": "Linked User UID" },
+        "department": { "type": "string", "maxLength": 100, "description": "Staff department (Billing, Sales, Support)" },
+        "roleTitle": { "type": "string", "maxLength": 100, "description": "Job title" },
+        "permissions": { "type": "string", "description": "Comma-separated or JSON list of granular permissions" },
+        "status": { "type": "string", "enum": ["active", "inactive"], "description": "Staff active status" },
+        "createdAt": { "type": "string", "description": "ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp" }
+      },
+      "required": ["id", "userId", "department", "roleTitle", "status", "createdAt", "updatedAt"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Billable item or service available for subscription lines",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique product ID" },
+        "name": { "type": "string", "maxLength": 150, "description": "Product display name" },
+        "sku": { "type": "string", "maxLength": 60, "description": "Stock keeping unit code" },
+        "type": { "type": "string", "enum": ["goods", "service"], "description": "Product type category" },
+        "salesPrice": { "type": "number", "description": "Base selling price" },
+        "costPrice": { "type": "number", "description": "Base acquisition or operation cost" },
+        "notes": { "type": "string", "maxLength": 500, "description": "Internal or catalog notes" },
+        "isActive": { "type": "boolean", "description": "Whether product is available for subscriptions" },
+        "createdAt": { "type": "string", "description": "ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp" }
+      },
+      "required": ["id", "name", "sku", "type", "salesPrice", "costPrice", "isActive", "createdAt", "updatedAt"]
+    },
+    "ProductVariant": {
+      "title": "ProductVariant",
+      "description": "Specific variant of a base product with price delta or attributes",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique variant ID" },
+        "productId": { "type": "string", "description": "Parent Product ID" },
+        "variantName": { "type": "string", "maxLength": 100, "description": "Variant title (e.g. Pro, 10-User, Enterprise)" },
+        "sku": { "type": "string", "maxLength": 60, "description": "Variant specific SKU" },
+        "additionalPricing": { "type": "number", "description": "Price adjustment added to base product sales price" },
+        "attributes": { "type": "string", "description": "JSON attributes map or specifications" },
+        "stock": { "type": "number", "description": "Stock count or capacity limit (-1 for unlimited)" },
+        "createdAt": { "type": "string", "description": "ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp" }
+      },
+      "required": ["id", "productId", "variantName", "sku", "additionalPricing", "createdAt", "updatedAt"]
+    },
+    "SubscriptionPlan": {
+      "title": "SubscriptionPlan",
+      "description": "Billing cadence and plan constraints for subscriptions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique plan ID" },
+        "name": { "type": "string", "maxLength": 100, "description": "Plan name" },
+        "code": { "type": "string", "maxLength": 50, "description": "Plan reference code" },
+        "description": { "type": "string", "maxLength": 500, "description": "Plan description" },
+        "billingInterval": { "type": "string", "enum": ["daily", "weekly", "monthly", "yearly"], "description": "Cadence" },
+        "billingIntervalCount": { "type": "number", "description": "Multiplier for cadence (default 1)" },
+        "minQuantity": { "type": "number", "description": "Minimum seat or item quantity required" },
+        "salesPrice": { "type": "number", "description": "Base subscription fee" },
+        "currency": { "type": "string", "maxLength": 3, "description": "Currency code (e.g. USD, EUR)" },
+        "availabilityStartDate": { "type": "string", "description": "Start date for plan eligibility" },
+        "availabilityEndDate": { "type": "string", "description": "Optional cutoff date for new subscriptions" },
+        "status": { "type": "string", "enum": ["active", "archived"], "description": "Plan availability" },
+        "createdAt": { "type": "string", "description": "ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp" }
+      },
+      "required": ["id", "name", "code", "billingInterval", "minQuantity", "salesPrice", "currency", "status", "createdAt", "updatedAt"]
+    },
+    "Quotation": {
+      "title": "Quotation",
+      "description": "Preliminary subscription quote presented to a customer",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique quotation ID" },
+        "quotationNumber": { "type": "string", "maxLength": 50, "description": "Human-friendly quotation number (QTN-...)" },
+        "customerId": { "type": "string", "description": "Target customer ID" },
+        "subscriptionPlanId": { "type": "string", "description": "Target subscription plan ID" },
+        "validUntil": { "type": "string", "description": "Quotation expiration date" },
+        "subtotal": { "type": "number", "description": "Pre-tax total before discounts" },
+        "discountTotal": { "type": "number", "description": "Total discount deductions" },
+        "taxTotal": { "type": "number", "description": "Calculated taxes" },
+        "total": { "type": "number", "description": "Final quotation amount" },
+        "status": { "type": "string", "enum": ["draft", "sent", "accepted", "rejected", "converted"], "description": "Quotation state" },
+        "createdAt": { "type": "string", "description": "ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp" }
+      },
+      "required": ["id", "quotationNumber", "customerId", "subscriptionPlanId", "subtotal", "taxTotal", "total", "status", "createdAt", "updatedAt"]
+    },
+    "Subscription": {
+      "title": "Subscription",
+      "description": "Customer recurring agreement with line items and lifecycle states",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique subscription ID" },
+        "subscriptionNumber": { "type": "string", "maxLength": 50, "description": "Sequential identifier (e.g. SUB-2026-0001)" },
+        "customerId": { "type": "string", "description": "Customer document ID" },
+        "planId": { "type": "string", "description": "Subscription plan ID" },
+        "startDate": { "type": "string", "description": "Agreement start date" },
+        "expiryDate": { "type": "string", "description": "Agreement end or renewal date" },
+        "billingInterval": { "type": "string", "enum": ["daily", "weekly", "monthly", "yearly"], "description": "Cadence" },
+        "nextBillingDate": { "type": "string", "description": "Next scheduled invoice generation date" },
+        "paymentTerms": { "type": "string", "enum": ["immediate", "net15", "net30", "net60"], "description": "Payment terms" },
+        "status": { "type": "string", "enum": ["Draft", "Quotation", "Confirmed", "Active", "Closed"], "description": "Subscription state" },
+        "subtotal": { "type": "number", "description": "Pre-tax pre-discount line item total" },
+        "discountId": { "type": "string", "description": "Applied discount code ID if any" },
+        "discountAmount": { "type": "number", "description": "Deducted discount amount" },
+        "taxAmount": { "type": "number", "description": "Total computed sales tax" },
+        "totalAmount": { "type": "number", "description": "Grand total billable amount per cycle" },
+        "autoRenew": { "type": "boolean", "description": "Whether subscription automatically renews" },
+        "pausedAt": { "type": "string", "description": "Timestamp when paused" },
+        "cancelledAt": { "type": "string", "description": "Timestamp when cancelled" },
+        "cancellationReason": { "type": "string", "maxLength": 300, "description": "Reason given for cancellation" },
+        "createdAt": { "type": "string", "description": "ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp" }
+      },
+      "required": ["id", "subscriptionNumber", "customerId", "planId", "startDate", "billingInterval", "paymentTerms", "status", "subtotal", "totalAmount", "createdAt", "updatedAt"]
+    },
+    "SubscriptionLineItem": {
+      "title": "SubscriptionLineItem",
+      "description": "Individual product or add-on attached to a subscription",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique line item ID" },
+        "subscriptionId": { "type": "string", "description": "Parent subscription ID" },
+        "productId": { "type": "string", "description": "Product ID" },
+        "variantId": { "type": "string", "description": "Optional Product variant ID" },
+        "description": { "type": "string", "maxLength": 200, "description": "Line description" },
+        "quantity": { "type": "number", "description": "Quantity of item" },
+        "unitPrice": { "type": "number", "description": "Price per unit before tax" },
+        "discountAmount": { "type": "number", "description": "Discount applied specifically to line" },
+        "taxRuleId": { "type": "string", "description": "Tax rule reference ID" },
+        "taxRate": { "type": "number", "description": "Tax rate in percentage" },
+        "taxAmount": { "type": "number", "description": "Calculated tax on line" },
+        "lineTotal": { "type": "number", "description": "Final line amount including tax" }
+      },
+      "required": ["id", "subscriptionId", "productId", "quantity", "unitPrice", "lineTotal"]
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "Bill generated from an active or confirmed subscription cycle",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique invoice ID" },
+        "invoiceNumber": { "type": "string", "maxLength": 50, "description": "Sequential identifier (e.g. INV-2026-0001)" },
+        "subscriptionId": { "type": "string", "description": "Source subscription ID" },
+        "customerId": { "type": "string", "description": "Customer ID" },
+        "billingPeriodStart": { "type": "string", "description": "Cycle start date" },
+        "billingPeriodEnd": { "type": "string", "description": "Cycle end date" },
+        "dueDate": { "type": "string", "description": "Payment due date" },
+        "status": { "type": "string", "enum": ["Draft", "Confirmed", "Paid"], "description": "Invoice status" },
+        "subtotal": { "type": "number", "description": "Pre-tax pre-discount subtotal" },
+        "discountTotal": { "type": "number", "description": "Total discounts applied" },
+        "taxTotal": { "type": "number", "description": "Total taxes applied" },
+        "totalAmount": { "type": "number", "description": "Grand total due" },
+        "paidAmount": { "type": "number", "description": "Total amount paid toward this invoice" },
+        "outstandingBalance": { "type": "number", "description": "Remaining unpaid balance" },
+        "paymentTerms": { "type": "string", "enum": ["immediate", "net15", "net30", "net60"], "description": "Payment terms" },
+        "createdAt": { "type": "string", "description": "ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp" }
+      },
+      "required": ["id", "invoiceNumber", "subscriptionId", "customerId", "billingPeriodStart", "billingPeriodEnd", "dueDate", "status", "totalAmount", "paidAmount", "outstandingBalance", "createdAt", "updatedAt"]
+    },
+    "InvoiceLineItem": {
+      "title": "InvoiceLineItem",
+      "description": "Line item snapshot on an invoice",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique invoice line ID" },
+        "invoiceId": { "type": "string", "description": "Parent invoice ID" },
+        "productId": { "type": "string", "description": "Product reference ID" },
+        "variantId": { "type": "string", "description": "Optional variant ID" },
+        "description": { "type": "string", "maxLength": 200, "description": "Line description" },
+        "quantity": { "type": "number", "description": "Billed quantity" },
+        "unitPrice": { "type": "number", "description": "Billed unit price" },
+        "taxRate": { "type": "number", "description": "Tax percentage applied" },
+        "taxAmount": { "type": "number", "description": "Calculated tax" },
+        "lineTotal": { "type": "number", "description": "Line total" }
+      },
+      "required": ["id", "invoiceId", "productId", "quantity", "unitPrice", "lineTotal"]
+    },
+    "TaxRule": {
+      "title": "TaxRule",
+      "description": "Configurable tax percentage and jurisdiction settings",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique tax rule ID" },
+        "name": { "type": "string", "maxLength": 100, "description": "Tax rule name (e.g. Standard VAT, Sales Tax)" },
+        "ratePercentage": { "type": "number", "description": "Tax rate as percentage (e.g. 10 for 10%)" },
+        "code": { "type": "string", "maxLength": 30, "description": "Tax code identifier" },
+        "isCompound": { "type": "boolean", "description": "Whether applied on top of other taxes" },
+        "appliesTo": { "type": "string", "enum": ["all", "goods", "service"], "description": "Product type applicability" },
+        "country": { "type": "string", "maxLength": 50, "description": "Country of jurisdiction" },
+        "state": { "type": "string", "maxLength": 50, "description": "State or province" },
+        "isActive": { "type": "boolean", "description": "Whether tax rule is currently active" },
+        "createdAt": { "type": "string", "description": "ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp" }
+      },
+      "required": ["id", "name", "ratePercentage", "code", "appliesTo", "isActive", "createdAt", "updatedAt"]
+    },
+    "Discount": {
+      "title": "Discount",
+      "description": "Promotional or volume discount rules for subscriptions and items",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique discount ID" },
+        "code": { "type": "string", "maxLength": 50, "description": "Discount coupon code" },
+        "description": { "type": "string", "maxLength": 250, "description": "Discount description" },
+        "type": { "type": "string", "enum": ["fixed", "percentage"], "description": "Discount calculation type" },
+        "value": { "type": "number", "description": "Discount value ($ amount or percentage rate)" },
+        "minPurchaseAmount": { "type": "number", "description": "Minimum subtotal required to qualify" },
+        "minQuantity": { "type": "number", "description": "Minimum total items required to qualify" },
+        "startDate": { "type": "string", "description": "Start validity date" },
+        "endDate": { "type": "string", "description": "End validity date" },
+        "usageLimit": { "type": "number", "description": "Maximum number of times coupon can be redeemed (-1 for unlimited)" },
+        "timesUsed": { "type": "number", "description": "Counter of redemption times" },
+        "scope": { "type": "string", "enum": ["subscription_wide", "product_specific"], "description": "Application scope" },
+        "applicableProductIds": { "type": "string", "description": "JSON array of allowed product IDs for product_specific discounts" },
+        "isActive": { "type": "boolean", "description": "Whether discount is actively usable" },
+        "createdAt": { "type": "string", "description": "ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp" }
+      },
+      "required": ["id", "code", "type", "value", "scope", "isActive", "timesUsed", "createdAt", "updatedAt"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Recorded transaction settlement linked to an invoice",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique payment ID" },
+        "paymentNumber": { "type": "string", "maxLength": 50, "description": "Sequential identifier (e.g. PAY-2026-0001)" },
+        "invoiceId": { "type": "string", "description": "Linked invoice ID" },
+        "customerId": { "type": "string", "description": "Customer ID" },
+        "amount": { "type": "number", "description": "Amount paid" },
+        "paymentMethod": { "type": "string", "enum": ["credit_card", "bank_transfer", "cash", "check", "other"], "description": "Payment method" },
+        "paymentDate": { "type": "string", "description": "Date and time payment was received" },
+        "transactionReference": { "type": "string", "maxLength": 100, "description": "Bank/gateway reference or receipt number" },
+        "notes": { "type": "string", "maxLength": 500, "description": "Payment notes" },
+        "recordedByUserId": { "type": "string", "description": "Admin or staff UID who recorded the payment" },
+        "status": { "type": "string", "enum": ["completed", "refunded"], "description": "Payment status" },
+        "createdAt": { "type": "string", "description": "ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp" }
+      },
+      "required": ["id", "paymentNumber", "invoiceId", "customerId", "amount", "paymentMethod", "paymentDate", "status", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User account documents containing identity and role metadata"
+    },
+    "/customers/{customerId}": {
+      "schema": "Customer",
+      "description": "Customer profiles mapped to user accounts"
+    },
+    "/staff/{staffId}": {
+      "schema": "Staff",
+      "description": "Staff profile records created by administrators"
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Base products available for subscriptions"
+    },
+    "/products/{productId}/variants/{variantId}": {
+      "schema": "ProductVariant",
+      "description": "Variants and price deltas for a product"
+    },
+    "/subscriptionPlans/{planId}": {
+      "schema": "SubscriptionPlan",
+      "description": "Available subscription billing plans"
+    },
+    "/quotations/{quotationId}": {
+      "schema": "Quotation",
+      "description": "Quotation agreements prior to confirmation"
+    },
+    "/subscriptions/{subscriptionId}": {
+      "schema": "Subscription",
+      "description": "Active and lifecycle subscriptions"
+    },
+    "/subscriptions/{subscriptionId}/lineItems/{lineItemId}": {
+      "schema": "SubscriptionLineItem",
+      "description": "Line items for a subscription"
+    },
+    "/invoices/{invoiceId}": {
+      "schema": "Invoice",
+      "description": "Generated invoices and billing balances"
+    },
+    "/invoices/{invoiceId}/lineItems/{lineItemId}": {
+      "schema": "InvoiceLineItem",
+      "description": "Line items on an invoice"
+    },
+    "/taxRules/{taxRuleId}": {
+      "schema": "TaxRule",
+      "description": "Configurable tax rules"
+    },
+    "/discounts/{discountId}": {
+      "schema": "Discount",
+      "description": "Discount coupon codes and promotion rules"
+    },
+    "/payments/{paymentId}": {
+      "schema": "Payment",
+      "description": "Payment records applied to invoices"
+    }
+  }
+}

@@ -1,0 +1,152 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny-all catch-all rule
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        getUserData().role == 'admin' ||
+        request.auth.token.email == 'mchinmayaakshaya@gmail.com'
+      );
+    }
+
+    function isStaff() {
+      return isSignedIn() && (
+        getUserData().role == 'staff' ||
+        isAdmin()
+      );
+    }
+
+    function isCustomer() {
+      return isSignedIn() && getUserData().role == 'customer';
+    }
+
+    // 1. Users collection
+    // Customers can read their own profile; Admins can read/write all; Staff can read
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isStaff());
+      allow list: if isStaff();
+      // Only admins can promote or set role to staff/admin; users can update basic profile
+      allow create: if isSignedIn() && request.auth.uid == userId && (
+        request.resource.data.role == 'customer' || isAdmin()
+      );
+      allow update: if isSignedIn() && (
+        (request.auth.uid == userId && request.resource.data.role == resource.data.role) ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 2. Customers collection
+    // Staff/Admin can manage; Customers can only read/update their own customer record
+    match /customers/{customerId} {
+      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow list: if isStaff() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isStaff() || (isSignedIn() && request.resource.data.userId == request.auth.uid);
+      allow update: if isStaff() || (isSignedIn() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    // 3. Staff collection
+    // Only Admin can create/update/delete staff profiles
+    match /staff/{staffId} {
+      allow read: if isStaff();
+      allow write: if isAdmin();
+    }
+
+    // 4. Products collection
+    // Read: All authenticated; Write: Admin or Staff
+    match /products/{productId} {
+      allow read: if isSignedIn();
+      allow write: if isStaff();
+
+      // Product Variants subcollection
+      match /variants/{variantId} {
+        allow read: if isSignedIn();
+        allow write: if isStaff();
+      }
+    }
+
+    // 5. Subscription Plans collection
+    // Read: All authenticated; Write: Admin or Staff
+    match /subscriptionPlans/{planId} {
+      allow read: if isSignedIn();
+      allow write: if isStaff();
+    }
+
+    // 6. Quotations collection
+    // Staff can read/write; Customers can only read their own quotes
+    match /quotations/{quotationId} {
+      allow get: if isStaff() || (isSignedIn() && resource.data.customerId == request.auth.uid);
+      allow list: if isStaff() || (isSignedIn() && resource.data.customerId == request.auth.uid);
+      allow write: if isStaff();
+    }
+
+    // 7. Subscriptions collection
+    // Customers can read their own subscriptions; Staff can read/write
+    match /subscriptions/{subscriptionId} {
+      allow get: if isStaff() || (isSignedIn() && resource.data.customerId == request.auth.uid);
+      allow list: if isStaff() || (isSignedIn() && resource.data.customerId == request.auth.uid);
+      allow write: if isStaff();
+
+      // Subscription line items subcollection
+      match /lineItems/{lineItemId} {
+        allow read: if isStaff() || (isSignedIn() && get(/databases/$(database)/documents/subscriptions/$(subscriptionId)).data.customerId == request.auth.uid);
+        allow write: if isStaff();
+      }
+    }
+
+    // 8. Invoices collection
+    // Customers can read their own invoices; Staff can read/write
+    match /invoices/{invoiceId} {
+      allow get: if isStaff() || (isSignedIn() && resource.data.customerId == request.auth.uid);
+      allow list: if isStaff() || (isSignedIn() && resource.data.customerId == request.auth.uid);
+      allow write: if isStaff();
+
+      // Invoice line items subcollection
+      match /lineItems/{lineItemId} {
+        allow read: if isStaff() || (isSignedIn() && get(/databases/$(database)/documents/invoices/$(invoiceId)).data.customerId == request.auth.uid);
+        allow write: if isStaff();
+      }
+    }
+
+    // 9. Tax Rules collection
+    // Read: All authenticated; Write: Admin or Staff
+    match /taxRules/{taxRuleId} {
+      allow read: if isSignedIn();
+      allow write: if isStaff();
+    }
+
+    // 10. Discounts collection
+    // Read: All authenticated; Write: Admin or Staff
+    match /discounts/{discountId} {
+      allow read: if isSignedIn();
+      allow write: if isStaff();
+    }
+
+    // 11. Payments collection
+    // Customers can view payments for their customer ID; Staff can record and update
+    match /payments/{paymentId} {
+      allow get: if isStaff() || (isSignedIn() && resource.data.customerId == request.auth.uid);
+      allow list: if isStaff() || (isSignedIn() && resource.data.customerId == request.auth.uid);
+      allow write: if isStaff();
+    }
+  }
+}
